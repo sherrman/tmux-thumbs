@@ -1,4 +1,7 @@
+#[macro_use]
+extern crate log;
 extern crate clap;
+extern crate log4rs;
 extern crate rustbox;
 
 mod alphabets;

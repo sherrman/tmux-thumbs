@@ -4,6 +4,11 @@ use rustbox::{Color, OutputMode, RustBox};
 use std::char;
 use std::default::Default;
 
+use log::LevelFilter;
+use log4rs::append::file::FileAppender;
+use log4rs::config::{Appender, Config, Root};
+use log4rs::encode::pattern::PatternEncoder;
+
 pub struct View<'a> {
   state: &'a mut state::State<'a>,
   skip: usize,
@@ -156,13 +161,29 @@ impl<'a> View<'a> {
 
       rustbox.present();
 
+      let logfile = FileAppender::builder()
+        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .build("/home/smui/thumbs.log")
+        .unwrap();
+      let config = Config::builder()
+        .appender(Appender::builder().build("logfile", Box::new(logfile)))
+        .build(Root::builder().appender("logfile").build(LevelFilter::Info))
+        .unwrap();
+
+      log4rs::init_config(config).unwrap();
+      info!("logging starting");
+
       match rustbox.poll_event(false) {
         Ok(rustbox::Event::KeyEvent(key)) => match key {
           Key::Esc => {
+            info!("esc");
             break;
           }
           Key::Enter => match matches.iter().enumerate().find(|&h| h.0 == self.skip) {
-            Some(hm) => return Some((hm.1.text.to_string(), false)),
+            Some(hm) => {
+              info!("enter");
+              return Some((hm.1.text.to_string(), false));
+            }
             _ => panic!("Match not found?"),
           },
           Key::Up => {
@@ -182,6 +203,8 @@ impl<'a> View<'a> {
             let lower_key = key.to_lowercase();
 
             typed_hint.push_str(lower_key.as_str());
+
+            info!("{}", format!("char: '{}'", key).to_string());
 
             match matches
               .iter()
